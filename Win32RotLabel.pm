@@ -1,6 +1,6 @@
 package Tk::Win32RotLabel;
 
-our $VERSION = 0.2;
+our $VERSION = 0.3;
 
 use Tk;
 use Tk::widgets qw/Label/;
@@ -15,6 +15,7 @@ our (
      $SelectObject,
      $DeleteObject,
      $GetDC,
+     $ReleaseDC,
      $ExtTextOut,
      $GetTextExtent,
      $SetBkColor,
@@ -36,6 +37,7 @@ sub ClassInit {
   $SelectObject  = new Win32::API('gdi32' , 'SelectObject', [qw/N N/], 'N');
   $DeleteObject  = new Win32::API('gdi32' , 'DeleteObject', ['P'], 'I');
   $GetDC         = new Win32::API('user32', 'GetDC',        ['N'], 'N');
+  $ReleaseDC     = new Win32::API('user32', 'ReleaseDC',    [qw/N N/], 'I');
   $ExtTextOut    = new Win32::API('gdi32' , 'ExtTextOut',   [qw/N I I N P P
 							     I P/], 'I');
   $GetTextExtent = new Win32::API('user32', 'GetTabbedTextExtent', [qw/N P N
@@ -111,12 +113,13 @@ sub configure {
 sub _updateDescendants {
   my $m = shift;
 
-  ref $_ eq 'Win32RotLabel' && $_->_updateMe for $m->children;
+  ref $_ eq 'Tk::Win32RotLabel' && $_->_updateMe for $m->children;
 }
 
 # this method draws the text.
 sub _updateMe {
   my $w = shift;
+  return unless $w->toplevel->ismapped;
 
   # first off, get the background and foreground colors
   # in rgb syntax.
@@ -194,8 +197,8 @@ sub _updateMe {
   $w->update;
 
   # get actual size.
-  $W = $w->width;
-  $H = $w->height;
+  $W = $w->reqwidth;
+  $H = $w->reqheight;
 
   # determine the location of the text.
   my ($X, $Y) = (0, 0);
@@ -210,7 +213,6 @@ sub _updateMe {
   } else {
     $X = $W - $x * $cos;
   }
-
   # dump out the text.
   $ExtTextOut->Call(
       $hdc,
@@ -225,6 +227,7 @@ sub _updateMe {
   # clean up.
   $SelectObject->Call($hdc, $old);
   $DeleteObject->Call($font);
+  $ReleaseDC   ->Call($id, $hdc);
 }
 
 __END__
@@ -318,6 +321,12 @@ Through my trials I found out that not all fonts support rotation. It seems
 that only True-Type fonts support this. So, if you try to use a font and
 get weird results, try a different font. Times New Roman, the default, should
 work fine.
+
+If you set the size of your MainWindow, via a call to geometry() for
+example, and then create a Win32RotLabel widget as a child of your MainWindow,
+then the label will appear empty until you move or resize the MainWindow. As a
+workaround, either resize the MainWindow I<after> creating the Win32RotLabel
+object, or create a Frame, and make it the parent of your Win32RotLabel object.
 
 Sometimes, when resizing the toplevel, the text might appear to flicker. That
 is normal. In some cases though, the text disappears. I do not understand
