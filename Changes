@@ -1,0 +1,6 @@
+Revision history for Perl extension Tk::Win32RotLabel.
+
+0.01  Tue Mar 23 19:43:02 2004
+	- original version; created by h2xs 1.21 with options
+		-AX -n Tk::Win32RotLabel
+
