@@ -78,7 +78,7 @@ BUGS
 
     I wrote this, and tested it on two WindowsXP machines (with SP-1 and the
     latest security patches). It works. I did not test on any other
-    platform.
+    platform, but I got reports that it fails on Win2k. I'm investigating.
 
     If you can comment on any of the bugs above, then I would be happy to
     hear from you (especially if you know how to fix things ;)

@@ -1,7 +1,8 @@
-package Win32RotLabel;
+package Tk::Win32RotLabel;
 
-our $VERSION = 0.1;
+our $VERSION = 0.2;
 
+use Tk;
 use Tk::widgets qw/Label/;
 use base qw/Tk::Derived Tk::Label/;
 use Win32::API;
@@ -30,12 +31,15 @@ sub ClassInit {
 
   $class->SUPER::ClassInit($mw);
 
-  $CreateFont    = new Win32::API('gdi32' , 'CreateFont',   [('N') x 13, 'P'], 'N');
+  $CreateFont    = new Win32::API('gdi32' , 'CreateFont',   [('N') x 13,
+							     'P'], 'N');
   $SelectObject  = new Win32::API('gdi32' , 'SelectObject', [qw/N N/], 'N');
   $DeleteObject  = new Win32::API('gdi32' , 'DeleteObject', ['P'], 'I');
   $GetDC         = new Win32::API('user32', 'GetDC',        ['N'], 'N');
-  $ExtTextOut    = new Win32::API('gdi32' , 'ExtTextOut',   [qw/N I I N P P I P/], 'I');
-  $GetTextExtent = new Win32::API('gdi32', 'GetTextExtentPoint32', [qw/N P N P/], 'I');
+  $ExtTextOut    = new Win32::API('gdi32' , 'ExtTextOut',   [qw/N I I N P P
+							     I P/], 'I');
+  $GetTextExtent = new Win32::API('user32', 'GetTabbedTextExtent', [qw/N P N
+								    N P/], 'I');
   $SetBkColor    = new Win32::API('gdi32', 'SetBkColor', [qw/N N/], 'N');
   $SetTextColor  = new Win32::API('gdi32', 'SetTextColor', [qw/N N/], 'N');
 }
@@ -50,11 +54,11 @@ sub Populate {
   $w->SUPER::Populate($args);
 
   $w->ConfigSpecs(
-		  -angle        => [qw/METHOD angle Angle/, 0],
-		  -text         => [qw/METHOD text Text/, ''],
-		  -textvariable => [qw/METHOD textvariabel Textvariable/, undef],
-		  -font         => [qw/PASSIVE font Font/, ['Times New Roman']],
-		 );
+    -angle        => [qw/METHOD angle Angle/, 0],
+    -text         => [qw/METHOD text Text/, ''],
+    -textvariable => [qw/METHOD textvariabel Textvariable/, undef],
+    -font         => [qw/PASSIVE font Font/, ['Times New Roman']],
+   );
 
   my $top = $w->toplevel;
   unless ($configured{$top}) {
@@ -73,17 +77,14 @@ sub angle {
 
     $w->{ANGLE} = $a;
   }
-
   $w->{ANGLE};
 }
-
 sub text {
   my ($w, $t) = @_;
 
   if (defined $t) {
     $w->{TEXT} = $t;
   }
-
   $w->{TEXT};
 }
 
@@ -93,8 +94,16 @@ sub textvariable {
   if (defined $tv) {
     $w->{TEXTV} = $tv;
   }
-
   $w->{TEXTV};
+}
+
+sub configure {
+  my $w = shift;
+  $w->SUPER::configure(@_);
+
+  # update label if there is anything worthy.
+  my %a = @_;
+  $w->_updateMe if $a{-text} || $a{-textvariable} || $a{-font} || $a{-angle};
 }
 
 # called by the top level.
@@ -143,13 +152,13 @@ sub _updateMe {
 
   # create the logical font.
   my $font = $CreateFont->Call(int($size * 108 / 72),  # by trial and error
-			       0, $angle * 10, 0,
-			       ($weight eq 'normal' ? 400 : 700),
-			       ($slant  eq 'roman'  ?   0 :   1),
-			       $uline,
-			       $strike,
-			       0, 0, 0, 0, 0,
-			       $family);
+          0, $angle * 10, 0,
+          ($weight eq 'normal' ? 400 : 700),
+          ($slant  eq 'roman'  ?   0 :   1),
+          $uline,
+          $strike,
+          0, 0, 0, 0, 0,
+          $family);
 
   # select the font into the device context.
   my $old = $SelectObject->Call($hdc, $font);
@@ -168,9 +177,9 @@ sub _updateMe {
   my $len = length $text;
 
   # get the extent of the text.
-  my $lpSize = pack('LL', 0, 0); # store two LONGs
-  my $r = $GetTextExtent->Call($hdc, $text, $len, $lpSize);
-  my ($x, $y) = unpack('LL', $lpSize);
+  my $r = $GetTextExtent->Call($hdc, $text, $len, 0, 0);
+  my $y = $r >> 16;
+  my $x = $r & 65535;
 
   # calculate the desired size of the label.
   my $cos = abs(cos $angle * 3.14159 / 180);
@@ -204,14 +213,14 @@ sub _updateMe {
 
   # dump out the text.
   $ExtTextOut->Call(
-		    $hdc,
-		    int $X,
-		    int $Y,
-		    0,
-		    0,
-		    $text, $len,
-		    0
-		   );
+      $hdc,
+      int $X,
+      int $Y,
+      0,
+      0,
+      $text, $len,
+      0
+     );
 
   # clean up.
   $SelectObject->Call($hdc, $old);
@@ -316,7 +325,8 @@ why this happens. To fix this, you can simply minimize and re-maximize the
 window, or resize it again, and all should be fine.
 
 I wrote this, and tested it on two WindowsXP machines (with SP-1 and the latest
-security patches). It works. I did not test on any other platform.
+security patches). It works. I did not test on any other platform, but I got
+reports that it fails on Win2k. I'm investigating.
 
 If you can comment on any of the bugs above, then I would be happy to hear from
 you (especially if you know how to fix things ;)
