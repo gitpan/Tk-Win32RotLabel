@@ -1,6 +1,6 @@
 package Tk::Win32RotLabel;
 
-our $VERSION = 0.3;
+our $VERSION = 0.4;
 
 use Tk;
 use Tk::widgets qw/Label/;
@@ -150,6 +150,7 @@ sub _updateMe {
   my $strike = $w->fontActual($fontO, '-overstrike');
 
   # get the device context.
+  $w->update;
   my $id  = eval($w->id);
   my $hdc = $GetDC->Call($id);
 
@@ -356,7 +357,7 @@ Ala Qumsieh I<aqumsieh@cpan.org>
 
 =head1 COPYRIGHTS
 
-Copyright (c) 2004 Ala Qumsieh. All rights reserved.
+Copyright (c) 2008 Ala Qumsieh. All rights reserved.
 This module is free software;
 you can redistribute it and/or modify it under the same terms as Perl itself.
 

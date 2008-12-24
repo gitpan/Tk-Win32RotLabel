@@ -10,3 +10,5 @@ Revision history for Perl extension Tk::Win32RotLabel.
 0.3  Tue Jun  1 13:52:13 PDT 2004
 	- added ReleaseDC after each refresh. Hopefully this will
 	  fix the crashes on Win2k.
+0.4  Tue Dec 23 16:10:11 PST 2008
+	- small fix for winXP crash that involved adding $w->update.
